@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
+import { prisma, TransactionClient } from '@/lib/prisma';
 import { findSessionByToken, findUserById } from '@/lib/auth/store';
 import { randomUUID } from 'crypto';
 
@@ -142,7 +141,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Rollback single field
-      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await prisma.$transaction(async (tx: TransactionClient) => {
         // Get current value for history
         const currentMember = await tx.familyMember.findUnique({
           where: { id: change.memberId },
@@ -201,7 +200,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await prisma.$transaction(async (tx: TransactionClient) => {
         for (const change of batchChanges) {
           const currentMember = await tx.familyMember.findUnique({
             where: { id: change.memberId },
@@ -286,7 +285,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await prisma.$transaction(async (tx: TransactionClient) => {
         // Get current state for history
         const currentMember = await tx.familyMember.findUnique({
           where: { id: snapshotChange.memberId },

@@ -1,5 +1,5 @@
 // Database module for image management using Prisma
-import { prisma } from '../prisma';
+import { prisma, TransactionClient } from '../prisma';
 import { randomUUID } from 'crypto';
 
 // Types
@@ -219,7 +219,7 @@ export async function getPendingImages(options?: {
     }),
   ]);
 
-  const images = rows.map(row => toPendingImage(row as unknown as Record<string, unknown>));
+  const images = rows.map((row: unknown) => toPendingImage(row as Record<string, unknown>));
 
   return { images, total };
 }
@@ -241,7 +241,7 @@ export async function approvePendingImage(
   const photoId = generateId();
 
   // Use transaction to create photo and update pending image
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: TransactionClient) => {
     // Create the approved photo
     await tx.memberPhoto.create({
       data: {
@@ -376,7 +376,7 @@ export async function getMemberPhotos(memberId: string, options?: {
     }),
   ]);
 
-  const photos = rows.map(row => toMemberPhoto(row as unknown as Record<string, unknown>));
+  const photos = rows.map((row: unknown) => toMemberPhoto(row as Record<string, unknown>));
 
   return { photos, total };
 }
@@ -406,7 +406,7 @@ export async function getFamilyAlbumPhotos(options?: {
     }),
   ]);
 
-  const photos = rows.map(row => toMemberPhoto(row as unknown as Record<string, unknown>));
+  const photos = rows.map((row: unknown) => toMemberPhoto(row as Record<string, unknown>));
 
   return { photos, total };
 }
@@ -440,7 +440,7 @@ export async function getAllPhotos(options?: {
     }),
   ]);
 
-  const photos = rows.map(row => toMemberPhoto(row as unknown as Record<string, unknown>));
+  const photos = rows.map((row: unknown) => toMemberPhoto(row as Record<string, unknown>));
 
   return { photos, total };
 }
@@ -598,7 +598,7 @@ export async function getImageStats(): Promise<{
     }),
   ]);
 
-  const byCategory = categoryGroups.map(group => ({
+  const byCategory = categoryGroups.map((group: { category: string | null; _count: number }) => ({
     category: group.category,
     count: group._count,
   }));

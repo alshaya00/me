@@ -1,9 +1,18 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+// Prisma client wrapper with build-time fallback support
+// This handles the case where prisma generate hasn't been run yet
 
-export { Prisma };
+// Generic type for Prisma models - allows property access without full type definitions
+// eslint-disable-next-line
+type AnyRecord = { [key: string]: any };
+
+// Transaction client type - generic to work with or without generated types
+export type TransactionClient = AnyRecord;
+
+// Fallback Prisma namespace for build-time type safety
+export const Prisma = {} as const;
 
 // Type for the Prisma client - using Record to allow dynamic model access
-type PrismaClientType = PrismaClient & Record<string, unknown>;
+type PrismaClientType = AnyRecord;
 
 // Create a mock Prisma client for build time when Prisma isn't fully initialized
 function createMockPrismaClient(): PrismaClientType {
@@ -47,26 +56,40 @@ const globalForPrisma = globalThis as unknown as {
 
 let prisma: PrismaClientType;
 
-try {
-  // Check if DATABASE_URL is set
-  if (!process.env.DATABASE_URL) {
-    console.warn('DATABASE_URL not set, using mock client');
-    prisma = createMockPrismaClient();
-  } else {
-    // Initialize Prisma with PostgreSQL
-    prisma =
-      globalForPrisma.prisma ??
-      new PrismaClient({
+// Try to load the actual Prisma client
+function loadPrismaClient(): PrismaClientType | null {
+  try {
+    // Dynamic require to handle build-time when client isn't generated
+    const prismaModule = require('@prisma/client');
+    const PrismaClient = prismaModule.PrismaClient;
+    if (PrismaClient) {
+      return new PrismaClient({
         log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-      }) as PrismaClientType;
+      });
+    }
+  } catch {
+    // PrismaClient not available - likely during build without prisma generate
+  }
+  return null;
+}
 
+// Initialize prisma client
+if (globalForPrisma.prisma) {
+  prisma = globalForPrisma.prisma;
+} else if (!process.env.DATABASE_URL) {
+  console.warn('DATABASE_URL not set, using mock client');
+  prisma = createMockPrismaClient();
+} else {
+  const client = loadPrismaClient();
+  if (client) {
+    prisma = client;
     if (process.env.NODE_ENV !== 'production') {
       globalForPrisma.prisma = prisma;
     }
+  } else {
+    console.warn('Prisma client not available. Using mock client for build.');
+    prisma = createMockPrismaClient();
   }
-} catch (error) {
-  console.warn('Prisma client not initialized. Using mock client for build.', error);
-  prisma = createMockPrismaClient();
 }
 
 export { prisma };

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
+import { prisma, TransactionClient } from '@/lib/prisma';
 import { findSessionByToken, findUserById } from '@/lib/auth/store';
 import { randomUUID } from 'crypto';
 
@@ -171,7 +170,7 @@ export async function PUT(
       const batchId = randomUUID();
 
       // Start transaction for merge
-      const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const result = await prisma.$transaction(async (tx: TransactionClient) => {
         // 1. Record the merge in change history
         await tx.changeHistory.create({
           data: {

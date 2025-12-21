@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
+import { prisma, TransactionClient } from '@/lib/prisma';
 import { findSessionByToken, findUserById } from '@/lib/auth/store';
 import { getMemberById, familyMembers, updateMemberInMemory } from '@/lib/data';
 import { randomUUID } from 'crypto';
@@ -167,7 +166,7 @@ export async function POST(request: NextRequest) {
 
     try {
       // Perform the move in a transaction
-      const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const result = await prisma.$transaction(async (tx: TransactionClient) => {
         // 1. Record the change in history
         await tx.changeHistory.create({
           data: {
@@ -374,7 +373,7 @@ export async function PUT(request: NextRequest) {
     const validMoves = moves.filter((_, i) => results[i].success);
 
     if (validMoves.length > 0) {
-      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await prisma.$transaction(async (tx: TransactionClient) => {
         for (const move of validMoves) {
           const member = getMemberById(move.memberId)!;
           const newGeneration = calculateGeneration(move.newParentId);
